@@ -2016,6 +2016,12 @@
     // ==========================================
     // INITIALIZATION & USER ENGAGEMENT GESTURE
     // ==========================================
+    // Initialize Firebase listeners immediately so playlist and background are ready
+    setupFirebaseListeners();
+    
+    // Pre-render list immediately
+    renderPlaylist();
+
     clickTrigger.addEventListener("click", () => {
       clickTrigger.style.opacity = "0";
       setTimeout(() => clickTrigger.remove(), 800);
@@ -2025,16 +2031,12 @@
 
       // Initialize systems
       setupStats();
-      setupFirebaseListeners();
       requestAnimationFrame(updateFPS);
 
       // Load first song
       loadTrack(0);
       playTrack();
     });
-
-    // Pre-render list immediately
-    renderPlaylist();
   </script>
 </body>
 
