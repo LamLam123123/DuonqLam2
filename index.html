@@ -1697,7 +1697,7 @@
       currentTrackIdx = idx;
 
       const track = playlist[currentTrackIdx];
-      if (!audio.src.endsWith(track.src)) {
+      if (audio.getAttribute('src') !== track.src) {
         audio.src = track.src;
       }
       playerArt.src = track.cover;
@@ -1765,8 +1765,8 @@
     }
 
     function playTrack() {
+      isPlaying = true;
       audio.play().then(() => {
-        isPlaying = true;
         btnPlay.classList.add("playing");
         // Pause icon path
         playIcon.innerHTML = `<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>`;
@@ -1775,6 +1775,7 @@
           bar.style.animation = `bounceEQ ${0.4 + Math.random() * 0.4}s ease-in-out infinite alternate`;
         });
       }).catch(err => {
+        isPlaying = false;
         console.warn("Playback prevented or error:", err);
       });
     }
