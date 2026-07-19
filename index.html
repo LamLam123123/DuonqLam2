@@ -821,6 +821,28 @@
       position: relative;
     }
 
+    .admin-modal-content.wide {
+      width: 780px;
+    }
+
+    .admin-modal-split {
+      display: flex;
+      gap: 24px;
+      text-align: left;
+    }
+
+    .admin-modal-left, .admin-modal-right {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    @media (max-width: 650px) {
+      .admin-modal-split {
+        flex-direction: column;
+      }
+    }
+
     .admin-modal-title {
       font-size: 16px;
       font-weight: 600;
@@ -888,7 +910,7 @@
     }
 
     .admin-playlist-container {
-      max-height: 250px;
+      max-height: 380px;
       overflow-y: auto;
       margin-top: 10px;
       text-align: left;
@@ -982,7 +1004,15 @@
       background: rgba(255, 77, 77, 0.1);
     }
 
-    .admin-playlist-btn.delete:hover {
+    .admin-playlist-btn.drag-handle {
+      cursor: grab;
+      font-size: 16px;
+      background: transparent;
+    }
+    
+    .admin-playlist-btn.drag-handle:active {
+      cursor: grabbing;
+    }
       background: rgba(255, 77, 77, 0.2);
     }
 
@@ -1232,20 +1262,38 @@
 
   <!-- Admin Modal (Dashboard) -->
   <div class="admin-modal" id="bgLinkModal">
-    <div class="admin-modal-content" style="max-height: 90vh; overflow-y: auto;">
+    <div class="admin-modal-content wide" style="max-height: 90vh; overflow-y: auto;">
       <button class="admin-close" id="bgLinkClose">&times;</button>
       
-      <div class="admin-modal-title">🎬 Change Background</div>
-      <input type="url" class="admin-input" id="bgLinkInput" placeholder="Paste catbox.moe link..." autocomplete="off">
-      <button class="admin-btn" id="bgLinkSubmit">Apply Background</button>
-      <div class="admin-error" id="bgLinkError">❌ Invalid link</div>
-      <div class="admin-success" id="bgLinkSuccess">✅ Background updated!</div>
+      <div class="admin-modal-split">
+        <!-- LEFT: Playlist Manager -->
+        <div class="admin-modal-left">
+          <div class="admin-modal-title" style="margin-bottom: 5px;">🎵 Manage Playlist</div>
+          <div id="adminPlaylistContainer" class="admin-playlist-container">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
 
-      <div class="admin-modal-title" style="margin-top: 25px;">🎵 Manage Playlist</div>
-      <div id="adminPlaylistContainer" class="admin-playlist-container">
-        <!-- Rendered dynamically -->
+        <!-- RIGHT: Settings & Add Track -->
+        <div class="admin-modal-right">
+          <div class="admin-modal-title" style="margin-bottom: 5px;">🎬 Global Background</div>
+          <input type="url" class="admin-input" id="bgLinkInput" placeholder="Paste catbox.moe link..." autocomplete="off">
+          <button class="admin-btn" id="bgLinkSubmit">Apply</button>
+          <div class="admin-error" id="bgLinkError">❌ Invalid link</div>
+          <div class="admin-success" id="bgLinkSuccess">✅ Updated!</div>
+
+          <div class="admin-add-track-container" style="margin-top: 30px;">
+            <div class="admin-add-track-title">+ Add New Track</div>
+            <input type="text" id="newTrackName" class="admin-track-bg-input" placeholder="Song Name - Artist" autocomplete="off">
+            <input type="text" id="newTrackSrc" class="admin-track-bg-input" placeholder="Audio URL (catbox.moe .mp3)" autocomplete="off">
+            <input type="text" id="newTrackCover" class="admin-track-bg-input" placeholder="Cover Image URL (optional)" autocomplete="off">
+            <input type="text" id="newTrackBg" class="admin-track-bg-input" placeholder="Background URL (optional)" autocomplete="off">
+            <button class="admin-add-track-btn" id="btnAddNewTrack">Add Track</button>
+          </div>
+        </div>
       </div>
-      <button class="admin-btn" id="playlistSubmit" style="margin-top: 15px;">Save Playlist</button>
+
+      <button class="admin-btn" id="playlistSubmit" style="margin-top: 25px; width: 100%; max-width: 400px;">Save Playlist</button>
       <div class="admin-success" id="playlistSuccess">✅ Playlist updated!</div>
     </div>
   </div>
@@ -1724,26 +1772,17 @@
         const controls = document.createElement('div');
         controls.className = 'admin-playlist-controls';
         
-        const btnUp = document.createElement('button');
-        btnUp.className = 'admin-playlist-btn';
-        btnUp.innerHTML = '▲';
-        btnUp.onclick = () => movePlaylistItem(currentIdx, -1);
-        
-        const btnDown = document.createElement('button');
-        btnDown.className = 'admin-playlist-btn';
-        btnDown.innerHTML = '▼';
-        btnDown.onclick = () => movePlaylistItem(currentIdx, 1);
+        const btnDrag = document.createElement('div');
+        btnDrag.className = 'admin-playlist-btn drag-handle';
+        btnDrag.innerHTML = '≡';
+        btnDrag.title = 'Drag to reorder';
 
         const btnDelete = document.createElement('button');
         btnDelete.className = 'admin-playlist-btn delete';
         btnDelete.innerHTML = '❌';
         btnDelete.onclick = () => deletePlaylistItem(currentIdx);
         
-        if (currentIdx === 0) btnUp.style.visibility = 'hidden';
-        if (currentIdx === playlist.length - 1) btnDown.style.visibility = 'hidden';
-        
-        controls.appendChild(btnUp);
-        controls.appendChild(btnDown);
+        controls.appendChild(btnDrag);
         controls.appendChild(btnDelete);
         header.appendChild(titleSpan);
         header.appendChild(controls);
@@ -1782,66 +1821,41 @@
         item.appendChild(bgInput);
         container.appendChild(item);
       });
-
-      // Add New Track Form
-      const addContainer = document.createElement('div');
-      addContainer.className = 'admin-add-track-container';
-      
-      const addTitle = document.createElement('div');
-      addTitle.className = 'admin-add-track-title';
-      addTitle.textContent = '+ Add New Track';
-
-      const inputName = document.createElement('input');
-      inputName.className = 'admin-track-bg-input';
-      inputName.placeholder = 'Song Name - Artist';
-
-      const inputSrc = document.createElement('input');
-      inputSrc.className = 'admin-track-bg-input';
-      inputSrc.placeholder = 'Audio URL (catbox.moe .mp3)';
-
-      const inputCover = document.createElement('input');
-      inputCover.className = 'admin-track-bg-input';
-      inputCover.placeholder = 'Cover Image URL (optional)';
-
-      const inputBg = document.createElement('input');
-      inputBg.className = 'admin-track-bg-input';
-      inputBg.placeholder = 'Background Video/Image URL (optional)';
-
-      const btnAdd = document.createElement('button');
-      btnAdd.className = 'admin-add-track-btn';
-      btnAdd.textContent = 'Add Track';
-      btnAdd.onclick = () => {
-        if (!inputName.value.trim() || !inputSrc.value.trim()) {
-           alert("Please provide at least Name and Audio URL.");
-           return;
-        }
-        playlist.push({
-           name: inputName.value.trim(),
-           src: inputSrc.value.trim(),
-           cover: inputCover.value.trim() || "av2.jpg", // default cover
-           lrc: "", // lyrics not supported in add yet
-           bgUrl: inputBg.value.trim() || undefined
-        });
-        renderAdminPlaylist();
-      };
-
-      addContainer.appendChild(addTitle);
-      addContainer.appendChild(inputName);
-      addContainer.appendChild(inputSrc);
-      addContainer.appendChild(inputCover);
-      addContainer.appendChild(inputBg);
-      addContainer.appendChild(btnAdd);
-      
-      container.appendChild(addContainer);
     }
 
-    function movePlaylistItem(index, direction) {
-      if (index + direction < 0 || index + direction >= playlist.length) return;
-      const temp = playlist[index];
-      playlist[index] = playlist[index + direction];
-      playlist[index + direction] = temp;
+    document.getElementById('btnAddNewTrack').addEventListener('click', () => {
+      const inputName = document.getElementById('newTrackName');
+      const inputSrc = document.getElementById('newTrackSrc');
+      const inputCover = document.getElementById('newTrackCover');
+      const inputBg = document.getElementById('newTrackBg');
+
+      if (!inputName.value.trim() || !inputSrc.value.trim()) {
+         alert("Please provide at least Name and Audio URL.");
+         return;
+      }
+      
+      playlist.push({
+         name: inputName.value.trim(),
+         src: inputSrc.value.trim(),
+         cover: inputCover.value.trim() || "av2.jpg",
+         lrc: "",
+         bgUrl: inputBg.value.trim() || undefined
+      });
+      
+      // Clear inputs
+      inputName.value = '';
+      inputSrc.value = '';
+      inputCover.value = '';
+      inputBg.value = '';
+      
       renderAdminPlaylist();
-    }
+      
+      // Scroll to bottom
+      setTimeout(() => {
+        const container = document.getElementById('adminPlaylistContainer');
+        container.scrollTop = container.scrollHeight;
+      }, 50);
+    });
 
     function deletePlaylistItem(index) {
       if (confirm("Remove this track from the playlist?")) {
