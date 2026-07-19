@@ -912,6 +912,16 @@
       background: rgba(255, 255, 255, 0.05);
       border-radius: 8px;
       margin-bottom: 8px;
+      cursor: grab;
+    }
+    
+    .admin-playlist-item:active {
+      cursor: grabbing;
+    }
+
+    .admin-playlist-item.drag-over {
+      border: 2px dashed var(--primary-glow);
+      background: rgba(255, 94, 151, 0.1);
     }
 
     .admin-playlist-item-header {
@@ -1658,6 +1668,8 @@
       }
     }
 
+    let draggedItemIndex = null;
+
     function renderAdminPlaylist() {
       const container = document.getElementById('adminPlaylistContainer');
       container.innerHTML = '';
@@ -1665,6 +1677,43 @@
       playlist.forEach((track, currentIdx) => {
         const item = document.createElement('div');
         item.className = 'admin-playlist-item';
+        item.draggable = true;
+
+        item.addEventListener('dragstart', (e) => {
+          draggedItemIndex = currentIdx;
+          item.style.opacity = '0.5';
+        });
+
+        item.addEventListener('dragend', () => {
+          draggedItemIndex = null;
+          item.style.opacity = '1';
+          document.querySelectorAll('.admin-playlist-item').forEach(el => el.classList.remove('drag-over'));
+        });
+
+        item.addEventListener('dragover', (e) => {
+          e.preventDefault();
+        });
+
+        item.addEventListener('dragenter', (e) => {
+          e.preventDefault();
+          if (draggedItemIndex !== currentIdx) {
+            item.classList.add('drag-over');
+          }
+        });
+
+        item.addEventListener('dragleave', () => {
+          item.classList.remove('drag-over');
+        });
+
+        item.addEventListener('drop', (e) => {
+          e.preventDefault();
+          item.classList.remove('drag-over');
+          if (draggedItemIndex !== null && draggedItemIndex !== currentIdx) {
+            const draggedItem = playlist.splice(draggedItemIndex, 1)[0];
+            playlist.splice(currentIdx, 0, draggedItem);
+            renderAdminPlaylist();
+          }
+        });
         
         const header = document.createElement('div');
         header.className = 'admin-playlist-item-header';
@@ -1699,6 +1748,21 @@
         header.appendChild(titleSpan);
         header.appendChild(controls);
         
+        const coverInput = document.createElement('input');
+        coverInput.type = 'text';
+        coverInput.className = 'admin-track-bg-input';
+        coverInput.placeholder = 'Custom Cover URL (catbox.moe) - optional';
+        coverInput.value = track.cover || '';
+        coverInput.style.marginBottom = '6px';
+        coverInput.onchange = (e) => {
+          const val = e.target.value.trim();
+          if (val) {
+             track.cover = val;
+          } else {
+             track.cover = 'av2.jpg';
+          }
+        };
+
         const bgInput = document.createElement('input');
         bgInput.type = 'text';
         bgInput.className = 'admin-track-bg-input';
@@ -1714,6 +1778,7 @@
         };
 
         item.appendChild(header);
+        item.appendChild(coverInput);
         item.appendChild(bgInput);
         container.appendChild(item);
       });
