@@ -1695,6 +1695,7 @@
     });
 
     function applyBackground(url) {
+      if (!url) return;
       const bgImage = document.getElementById('bg-image');
       const isImage = url.match(/\.(jpeg|jpg|gif|png|webp)$/i);
       
@@ -1708,9 +1709,8 @@
       } else {
         bgImage.style.display = 'none';
         bgVideo.style.display = 'block';
-        const source = bgVideo.querySelector('source');
-        if (source.src !== url) {
-          source.src = url;
+        if (bgVideo.src !== url) {
+          bgVideo.src = url;
           bgVideo.load();
           bgVideo.play().catch(() => {});
         }
@@ -1840,7 +1840,7 @@
       playlist.push({
          name: inputName.value.trim(),
          src: inputSrc.value.trim(),
-         cover: inputCover.value.trim() || "av2.jpg",
+         cover: inputCover.value.trim() || "s4.jpg",
          lrc: "",
          bgUrl: inputBg.value.trim() || undefined
       });
@@ -1974,7 +1974,10 @@
         currentlyLoadedSrc = track.src;
         audio.load(); // Force browser to fetch the new audio src immediately
       }
-      playerArt.src = track.cover;
+      
+      playerArt.onerror = () => { playerArt.src = 's4.jpg'; };
+      playerArt.src = track.cover || 's4.jpg';
+      
       // Extract artist if in track name or placeholder
       const parts = track.name.split("-");
       if (parts.length > 1) {
