@@ -785,6 +785,205 @@
       to {
         opacity: 0.9;
       }
+    /* Admin Modal */
+    .admin-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      z-index: 100000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .admin-modal.active {
+      display: flex;
+    }
+
+    .admin-modal-content {
+      background: rgba(20, 20, 30, 0.95);
+      border: 1px solid rgba(255, 94, 151, 0.2);
+      border-radius: 16px;
+      padding: 30px;
+      width: 340px;
+      max-width: 90vw;
+      text-align: center;
+      backdrop-filter: blur(20px);
+      position: relative;
+    }
+
+    .admin-modal-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-main);
+      margin-bottom: 20px;
+      letter-spacing: 1px;
+    }
+
+    .admin-input {
+      width: 100%;
+      padding: 12px 16px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 94, 151, 0.25);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text-main);
+      font-family: 'Outfit', sans-serif;
+      font-size: 14px;
+      outline: none;
+      transition: all 0.3s ease;
+      text-align: center;
+      margin-bottom: 14px;
+    }
+
+    .admin-input::placeholder {
+      color: rgba(255, 255, 255, 0.25);
+    }
+
+    .admin-input:focus {
+      border-color: var(--primary-glow);
+      box-shadow: 0 0 15px rgba(255, 94, 151, 0.2);
+    }
+
+    .admin-btn {
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      border: none;
+      background: linear-gradient(135deg, var(--primary-glow), var(--secondary-glow));
+      color: #fff;
+      font-family: 'Outfit', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      letter-spacing: 0.5px;
+    }
+
+    .admin-btn:hover {
+      transform: scale(1.02);
+      box-shadow: 0 0 20px rgba(255, 94, 151, 0.4);
+    }
+
+    .admin-error {
+      color: #ff4757;
+      font-size: 12px;
+      margin-top: 10px;
+      display: none;
+    }
+
+    .admin-success {
+      color: #2ed573;
+      font-size: 12px;
+      margin-top: 10px;
+      display: none;
+    }
+
+    .admin-close {
+      position: absolute;
+      top: 12px;
+      right: 16px;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 24px;
+      cursor: pointer;
+      transition: color 0.3s;
+      line-height: 1;
+    }
+
+    .admin-close:hover {
+      color: var(--primary-glow);
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+      .profile-section {
+        top: 15px;
+        left: 15px;
+        padding: 10px 14px;
+        gap: 12px;
+      }
+
+      .avatar-wrapper {
+        width: 55px;
+        height: 55px;
+      }
+
+      .profile-name {
+        font-size: 18px;
+      }
+
+      .social-links {
+        gap: 8px;
+      }
+
+      .social-icon svg {
+        width: 14px;
+        height: 14px;
+      }
+
+      .like-section {
+        top: 15px;
+        right: 15px;
+      }
+
+      .like-btn {
+        padding: 8px 14px;
+        gap: 6px;
+      }
+
+      .like-btn svg {
+        width: 18px;
+        height: 18px;
+      }
+
+      .like-count {
+        font-size: 14px;
+      }
+
+      .bottom-badge {
+        bottom: 75px;
+        font-size: 11px;
+        padding: 6px 12px;
+      }
+
+      .badge-left {
+        left: 15px;
+      }
+
+      .badge-right {
+        right: 15px;
+      }
+
+      .lyrics-container {
+        bottom: 120px;
+        width: 90%;
+      }
+
+      .lyric-line {
+        font-size: 13px;
+      }
+
+      .lyric-line.active {
+        font-size: 14px;
+      }
+
+      .music-panel-wrapper {
+        width: 95vw;
+        bottom: 10px;
+      }
+
+      .music-panel-wrapper.expanded .playlist-drawer {
+        height: 240px;
+      }
+
+      .player-album-art {
+        width: 36px;
+        height: 36px;
+      }
     }
   </style>
 </head>
@@ -877,6 +1076,29 @@
           d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
       </svg>
       <span class="like-count" id="likeCount">0</span>
+    </div>
+  </div>
+
+  <!-- Admin Modal (Password) -->
+  <div class="admin-modal" id="adminModal">
+    <div class="admin-modal-content">
+      <button class="admin-close" id="adminClose">&times;</button>
+      <div class="admin-modal-title">🔒 Admin Access</div>
+      <input type="password" class="admin-input" id="adminPassword" placeholder="Enter password..." autocomplete="off">
+      <button class="admin-btn" id="adminSubmit">Verify</button>
+      <div class="admin-error" id="adminError">❌ Incorrect password</div>
+    </div>
+  </div>
+
+  <!-- Admin Modal (Background Link) -->
+  <div class="admin-modal" id="bgLinkModal">
+    <div class="admin-modal-content">
+      <button class="admin-close" id="bgLinkClose">&times;</button>
+      <div class="admin-modal-title">🎬 Change Background Video</div>
+      <input type="url" class="admin-input" id="bgLinkInput" placeholder="Paste catbox.moe link..." autocomplete="off">
+      <button class="admin-btn" id="bgLinkSubmit">Apply & Save</button>
+      <div class="admin-error" id="bgLinkError">❌ Invalid link</div>
+      <div class="admin-success" id="bgLinkSuccess">✅ Background updated for everyone!</div>
     </div>
   </div>
 
@@ -1047,7 +1269,7 @@
         likesEl.textContent = likes;
 
         // Check if liked before
-        if (localStorage.getItem("page_is_liked") === "true") {
+        if (sessionStorage.getItem("session_liked") === "true") {
           likeBtn.classList.add("liked");
         }
       } else {
@@ -1069,7 +1291,7 @@
         });
 
         // Local liked tracker
-        if (localStorage.getItem("page_is_liked") === "true") {
+        if (sessionStorage.getItem("session_liked") === "true") {
           likeBtn.classList.add("liked");
         }
       }
@@ -1083,11 +1305,11 @@
         let likes = parseInt(localStorage.getItem("page_likes") || "0");
         if (isAlreadyLiked) {
           likes = Math.max(0, likes - 1);
-          localStorage.setItem("page_is_liked", "false");
+          sessionStorage.setItem("session_liked", "false");
           likeBtn.classList.remove("liked");
         } else {
           likes++;
-          localStorage.setItem("page_is_liked", "true");
+          sessionStorage.setItem("session_liked", "true");
           likeBtn.classList.add("liked");
           spawnFloatingHearts();
         }
@@ -1104,10 +1326,10 @@
         }, (error, committed) => {
           if (committed) {
             if (isAlreadyLiked) {
-              localStorage.setItem("page_is_liked", "false");
+              sessionStorage.setItem("session_liked", "false");
               likeBtn.classList.remove("liked");
             } else {
-              localStorage.setItem("page_is_liked", "true");
+              sessionStorage.setItem("session_liked", "true");
               likeBtn.classList.add("liked");
               spawnFloatingHearts();
             }
@@ -1182,6 +1404,112 @@
 
     const lyricPrev = document.getElementById("lyricPrev");
     const lyricActive = document.getElementById("lyricActive");
+
+    // ==========================================
+    // ADMIN PANEL (5 clicks on avatar)
+    // ==========================================
+    const ADMIN_HASH = 'ee1a5fb231db30bd4acc32ca40788d2c911859506f07ed1e412ec640b06df25f';
+    let avatarClickCount = 0;
+    let avatarClickTimer = null;
+    const avatarImg = document.getElementById('avatarImg');
+    const adminModal = document.getElementById('adminModal');
+    const bgLinkModal = document.getElementById('bgLinkModal');
+
+    async function sha256(text) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(text);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    avatarImg.addEventListener('click', (e) => {
+      e.stopPropagation();
+      avatarClickCount++;
+      clearTimeout(avatarClickTimer);
+      avatarClickTimer = setTimeout(() => { avatarClickCount = 0; }, 3000);
+      if (avatarClickCount >= 5) {
+        avatarClickCount = 0;
+        adminModal.classList.add('active');
+        document.getElementById('adminPassword').value = '';
+        document.getElementById('adminPassword').focus();
+        document.getElementById('adminError').style.display = 'none';
+      }
+    });
+
+    document.getElementById('adminClose').addEventListener('click', () => {
+      adminModal.classList.remove('active');
+    });
+
+    document.getElementById('adminSubmit').addEventListener('click', async () => {
+      const pwd = document.getElementById('adminPassword').value;
+      const hash = await sha256(pwd);
+      if (hash === ADMIN_HASH) {
+        adminModal.classList.remove('active');
+        bgLinkModal.classList.add('active');
+        document.getElementById('bgLinkInput').value = '';
+        document.getElementById('bgLinkInput').focus();
+        document.getElementById('bgLinkError').style.display = 'none';
+        document.getElementById('bgLinkSuccess').style.display = 'none';
+      } else {
+        document.getElementById('adminError').style.display = 'block';
+        setTimeout(() => { document.getElementById('adminError').style.display = 'none'; }, 2000);
+      }
+    });
+
+    document.getElementById('adminPassword').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') document.getElementById('adminSubmit').click();
+    });
+
+    document.getElementById('bgLinkClose').addEventListener('click', () => {
+      bgLinkModal.classList.remove('active');
+    });
+
+    document.getElementById('bgLinkSubmit').addEventListener('click', () => {
+      const link = document.getElementById('bgLinkInput').value.trim();
+      if (!link || !link.includes('catbox.moe')) {
+        document.getElementById('bgLinkError').style.display = 'block';
+        setTimeout(() => { document.getElementById('bgLinkError').style.display = 'none'; }, 2000);
+        return;
+      }
+      if (!fallbackMode) {
+        db.ref('settings/backgroundUrl').set(link);
+        document.getElementById('bgLinkSuccess').style.display = 'block';
+        setTimeout(() => {
+          bgLinkModal.classList.remove('active');
+        }, 1500);
+      } else {
+        // Fallback: just change locally
+        bgVideo.querySelector('source').src = link;
+        bgVideo.load();
+        bgVideo.play().catch(() => {});
+        document.getElementById('bgLinkSuccess').style.display = 'block';
+        setTimeout(() => {
+          bgLinkModal.classList.remove('active');
+        }, 1500);
+      }
+    });
+
+    document.getElementById('bgLinkInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') document.getElementById('bgLinkSubmit').click();
+    });
+
+    // Listen to background URL changes from Firebase (realtime for all users)
+    function setupBackgroundListener() {
+      if (!fallbackMode) {
+        db.ref('settings/backgroundUrl').on('value', (snapshot) => {
+          const url = snapshot.val();
+          if (url) {
+            const source = bgVideo.querySelector('source');
+            if (source.src !== url) {
+              source.src = url;
+              bgVideo.load();
+              bgVideo.play().catch(() => {});
+            }
+          }
+        });
+      }
+    }
 
     let currentTrackIdx = 0;
     let isPlaying = false;
@@ -1530,6 +1858,7 @@
 
       // Initialize systems
       setupStats();
+      setupBackgroundListener();
       requestAnimationFrame(updateFPS);
 
       // Load first song
