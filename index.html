@@ -61,7 +61,7 @@
       overflow: hidden;
     }
 
-    #bg-video {
+    #bg-video, #bg-image {
       position: absolute;
       top: 0;
       left: 0;
@@ -997,6 +997,7 @@
     <video id="bg-video" autoplay loop muted playsinline>
       <source src="https://files.catbox.moe/f3t0ly.mp4" type="video/mp4">
     </video>
+    <img id="bg-image" style="display: none;" alt="Background">
   </div>
   <div class="bg-overlay"></div>
 
@@ -1484,9 +1485,7 @@
         }, 1500);
       } else {
         // Fallback: just change locally
-        bgVideo.querySelector('source').src = link;
-        bgVideo.load();
-        bgVideo.play().catch(() => {});
+        applyBackground(link);
         document.getElementById('bgLinkSuccess').style.display = 'block';
         setTimeout(() => {
           bgLinkModal.classList.remove('active');
@@ -1498,18 +1497,36 @@
       if (e.key === 'Enter') document.getElementById('bgLinkSubmit').click();
     });
 
+    function applyBackground(url) {
+      const bgImage = document.getElementById('bg-image');
+      const isImage = url.match(/\.(jpeg|jpg|gif|png|webp)$/i);
+      
+      if (isImage) {
+        bgVideo.style.display = 'none';
+        bgVideo.pause();
+        bgImage.style.display = 'block';
+        if (bgImage.src !== url) {
+          bgImage.src = url;
+        }
+      } else {
+        bgImage.style.display = 'none';
+        bgVideo.style.display = 'block';
+        const source = bgVideo.querySelector('source');
+        if (source.src !== url) {
+          source.src = url;
+          bgVideo.load();
+          bgVideo.play().catch(() => {});
+        }
+      }
+    }
+
     // Listen to background URL changes from Firebase (realtime for all users)
     function setupBackgroundListener() {
       if (!fallbackMode) {
         db.ref('settings/backgroundUrl').on('value', (snapshot) => {
           const url = snapshot.val();
           if (url) {
-            const source = bgVideo.querySelector('source');
-            if (source.src !== url) {
-              source.src = url;
-              bgVideo.load();
-              bgVideo.play().catch(() => {});
-            }
+            applyBackground(url);
           }
         });
       }
