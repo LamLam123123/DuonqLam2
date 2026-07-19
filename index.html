@@ -1991,6 +1991,9 @@
         applyBackground(track.bgUrl);
       } else if (globalBackgroundUrl) {
         applyBackground(globalBackgroundUrl);
+      } else {
+        // Fallback: show default video
+        applyBackground('https://files.catbox.moe/f3t0ly.mp4');
       }
 
       // Use cached lyrics instantly
