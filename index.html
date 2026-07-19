@@ -1697,7 +1697,9 @@
       currentTrackIdx = idx;
 
       const track = playlist[currentTrackIdx];
-      audio.src = track.src;
+      if (!audio.src.endsWith(track.src)) {
+        audio.src = track.src;
+      }
       playerArt.src = track.cover;
       // Extract artist if in track name or placeholder
       const parts = track.name.split("-");
