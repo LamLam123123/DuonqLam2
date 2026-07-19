@@ -907,14 +907,34 @@
 
     .admin-playlist-item {
       display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 8px 12px;
+      flex-direction: column;
+      padding: 10px 15px;
       background: rgba(255, 255, 255, 0.05);
       border-radius: 8px;
-      margin-bottom: 6px;
-      font-size: 13px;
+      margin-bottom: 8px;
+    }
+
+    .admin-playlist-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      margin-bottom: 8px;
+    }
+
+    .admin-track-bg-input {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.1);
       color: var(--text-main);
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      outline: none;
+      transition: border 0.3s;
+    }
+    .admin-track-bg-input:focus {
+      border-color: var(--primary-glow);
     }
 
     .admin-playlist-item span {
@@ -1605,6 +1625,9 @@
         const item = document.createElement('div');
         item.className = 'admin-playlist-item';
         
+        const header = document.createElement('div');
+        header.className = 'admin-playlist-item-header';
+        
         const titleSpan = document.createElement('span');
         titleSpan.textContent = `${currentIdx + 1}. ${track.name}`;
         
@@ -1626,8 +1649,25 @@
         
         controls.appendChild(btnUp);
         controls.appendChild(btnDown);
-        item.appendChild(titleSpan);
-        item.appendChild(controls);
+        header.appendChild(titleSpan);
+        header.appendChild(controls);
+        
+        const bgInput = document.createElement('input');
+        bgInput.type = 'text';
+        bgInput.className = 'admin-track-bg-input';
+        bgInput.placeholder = 'Custom Background URL (catbox.moe) - optional';
+        bgInput.value = trackBackgrounds[originalIdx] || '';
+        bgInput.onchange = (e) => {
+          const val = e.target.value.trim();
+          if (val) {
+             trackBackgrounds[originalIdx] = val;
+          } else {
+             delete trackBackgrounds[originalIdx];
+          }
+        };
+
+        item.appendChild(header);
+        item.appendChild(bgInput);
         container.appendChild(item);
       });
     }
@@ -1643,6 +1683,7 @@
     document.getElementById('playlistSubmit').addEventListener('click', () => {
       if (!fallbackMode) {
         db.ref('settings/playlistOrder').set(currentPlaylistOrder);
+        db.ref('settings/trackBackgrounds').set(trackBackgrounds);
         document.getElementById('playlistSuccess').style.display = 'block';
         setTimeout(() => {
           document.getElementById('playlistSuccess').style.display = 'none';
@@ -1658,6 +1699,9 @@
     });
 
     let isFirebaseLoaded = false;
+    let trackBackgrounds = {};
+    let globalBackgroundUrl = "";
+
     function markAppReady() {
       if (!isFirebaseLoaded) {
         isFirebaseLoaded = true;
@@ -1676,7 +1720,25 @@
         db.ref('settings/backgroundUrl').on('value', (snapshot) => {
           const url = snapshot.val();
           if (url) {
-            applyBackground(url);
+            globalBackgroundUrl = url;
+            // If current track doesn't have a specific bg, apply this
+            const originalIdx = currentPlaylistOrder[currentTrackIdx];
+            if (!trackBackgrounds[originalIdx]) {
+              applyBackground(url);
+            }
+          }
+        });
+
+        db.ref('settings/trackBackgrounds').on('value', (snapshot) => {
+          trackBackgrounds = snapshot.val() || {};
+          // Immediately apply if playing
+          if (isPlaying || currentTrackIdx !== undefined) {
+             const originalIdx = currentPlaylistOrder[currentTrackIdx];
+             if (trackBackgrounds[originalIdx]) {
+               applyBackground(trackBackgrounds[originalIdx]);
+             } else if (globalBackgroundUrl) {
+               applyBackground(globalBackgroundUrl);
+             }
           }
         });
 
@@ -1732,6 +1794,16 @@
       } else {
         playerTitle.textContent = track.name;
         playerArtist.textContent = "Duong Lam";
+      }
+
+      // Apply custom background for track if available
+      if (currentPlaylistOrder && currentPlaylistOrder.length > 0) {
+        const originalIdx = currentPlaylistOrder[currentTrackIdx];
+        if (trackBackgrounds && trackBackgrounds[originalIdx]) {
+          applyBackground(trackBackgrounds[originalIdx]);
+        } else if (globalBackgroundUrl) {
+          applyBackground(globalBackgroundUrl);
+        }
       }
 
       // Use cached lyrics instantly
