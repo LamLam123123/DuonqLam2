@@ -1162,8 +1162,8 @@
 
   <!-- Ambient Background -->
   <div class="bg-animation">
-    <video id="bg-video" src="https://files.catbox.moe/f3t0ly.mp4" autoplay loop muted playsinline crossorigin="anonymous"></video>
-    <img id="bg-image" style="display: none;" alt="Background" crossorigin="anonymous">
+    <video id="bg-video" src="https://files.catbox.moe/f3t0ly.mp4" autoplay loop muted playsinline></video>
+    <img id="bg-image" style="display: none;" alt="Background">
   </div>
   <div class="bg-overlay"></div>
 
@@ -1974,7 +1974,6 @@
       }
       
       playerArt.onerror = () => { playerArt.src = 's4.jpg'; };
-      playerArt.crossOrigin = 'anonymous';
       playerArt.src = track.cover || 's4.jpg';
       
       // Extract artist if in track name or placeholder
@@ -2024,7 +2023,7 @@
         const item = document.createElement("div");
         item.className = "playlist-item";
         item.innerHTML = `
-          <img src="${track.cover || 's4.jpg'}" class="playlist-art" crossorigin="anonymous" onerror="this.src='s4.jpg'">
+          <img src="${track.cover || 's4.jpg'}" class="playlist-art" onerror="this.src='s4.jpg'">
           <div class="playlist-meta">
             <span class="playlist-title">${track.name}</span>
             <span class="playlist-artist">Duong Lam</span>
