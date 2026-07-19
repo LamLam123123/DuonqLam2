@@ -883,6 +883,66 @@
       display: none;
     }
 
+    .admin-playlist-container {
+      max-height: 250px;
+      overflow-y: auto;
+      margin-top: 10px;
+      text-align: left;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+    }
+
+    .admin-playlist-container::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .admin-playlist-container::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+    }
+
+    .admin-playlist-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      margin-bottom: 6px;
+      font-size: 13px;
+      color: var(--text-main);
+    }
+
+    .admin-playlist-item span {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 180px;
+    }
+
+    .admin-playlist-controls {
+      display: flex;
+      gap: 6px;
+    }
+
+    .admin-playlist-btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      color: var(--text-main);
+      width: 24px;
+      height: 24px;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+
+    .admin-playlist-btn:hover {
+      background: rgba(255, 94, 151, 0.3);
+    }
+
     .admin-close {
       position: absolute;
       top: 12px;
@@ -947,9 +1007,10 @@
       }
 
       .bottom-badge {
-        bottom: 75px;
+        bottom: 10px;
         font-size: 11px;
         padding: 6px 12px;
+        z-index: 10;
       }
 
       .badge-left {
@@ -1093,15 +1154,23 @@
     </div>
   </div>
 
-  <!-- Admin Modal (Background Link) -->
+  <!-- Admin Modal (Dashboard) -->
   <div class="admin-modal" id="bgLinkModal">
-    <div class="admin-modal-content">
+    <div class="admin-modal-content" style="max-height: 90vh; overflow-y: auto;">
       <button class="admin-close" id="bgLinkClose">&times;</button>
-      <div class="admin-modal-title">🎬 Change Background Video</div>
+      
+      <div class="admin-modal-title">🎬 Change Background</div>
       <input type="url" class="admin-input" id="bgLinkInput" placeholder="Paste catbox.moe link..." autocomplete="off">
-      <button class="admin-btn" id="bgLinkSubmit">Apply & Save</button>
+      <button class="admin-btn" id="bgLinkSubmit">Apply Background</button>
       <div class="admin-error" id="bgLinkError">❌ Invalid link</div>
-      <div class="admin-success" id="bgLinkSuccess">✅ Background updated for everyone!</div>
+      <div class="admin-success" id="bgLinkSuccess">✅ Background updated!</div>
+
+      <div class="admin-modal-title" style="margin-top: 25px;">🎵 Manage Playlist</div>
+      <div id="adminPlaylistContainer" class="admin-playlist-container">
+        <!-- Rendered dynamically -->
+      </div>
+      <button class="admin-btn" id="playlistSubmit" style="margin-top: 15px;">Save Playlist Order</button>
+      <div class="admin-success" id="playlistSuccess">✅ Playlist updated!</div>
     </div>
   </div>
 
@@ -1196,7 +1265,7 @@
 
   <script>
     // Playlist data extracted from previous design
-    const playlist = [
+    const defaultPlaylist = [
       { src: "butchibac.mp3", cover: "s4.jpg", name: "But Chi Bac", lrc: "butchibac.lrc" },
       { src: "ngannamanhsang.mp3", cover: "what.jpg", name: "Ngan Nam Anh Sang", lrc: "ngannamanhsang.lrc" },
       { src: "cocongmaisac.mp3", cover: "svt8.jpg", name: "Co Cong Mai Sac", lrc: "cocongmaisac.lrc" },
@@ -1222,6 +1291,8 @@
       { src: "truockhiemtontai.mp3", cover: "p9.jpg", name: "Truoc Khi Em Ton Tai", lrc: "truockhiemtontai.lrc" },
       { src: "uma.mp3", cover: "uma.jpg", name: "Low Cortisol", lrc: "uma.lrc" }
     ];
+    let playlist = [...defaultPlaylist];
+    let currentPlaylistOrder = Array.from({length: defaultPlaylist.length}, (_, i) => i);
 
     // ==========================================
     // FIREBASE SETUP & STUFF
@@ -1456,6 +1527,8 @@
         document.getElementById('bgLinkInput').focus();
         document.getElementById('bgLinkError').style.display = 'none';
         document.getElementById('bgLinkSuccess').style.display = 'none';
+        document.getElementById('playlistSuccess').style.display = 'none';
+        renderAdminPlaylist();
       } else {
         document.getElementById('adminError').style.display = 'block';
         setTimeout(() => { document.getElementById('adminError').style.display = 'none'; }, 2000);
@@ -1520,13 +1593,86 @@
       }
     }
 
-    // Listen to background URL changes from Firebase (realtime for all users)
-    function setupBackgroundListener() {
+    function renderAdminPlaylist() {
+      const container = document.getElementById('adminPlaylistContainer');
+      container.innerHTML = '';
+      currentPlaylistOrder.forEach((originalIdx, currentIdx) => {
+        const track = defaultPlaylist[originalIdx];
+        const item = document.createElement('div');
+        item.className = 'admin-playlist-item';
+        
+        const titleSpan = document.createElement('span');
+        titleSpan.textContent = `${currentIdx + 1}. ${track.name}`;
+        
+        const controls = document.createElement('div');
+        controls.className = 'admin-playlist-controls';
+        
+        const btnUp = document.createElement('button');
+        btnUp.className = 'admin-playlist-btn';
+        btnUp.innerHTML = '▲';
+        btnUp.onclick = () => movePlaylistItem(currentIdx, -1);
+        
+        const btnDown = document.createElement('button');
+        btnDown.className = 'admin-playlist-btn';
+        btnDown.innerHTML = '▼';
+        btnDown.onclick = () => movePlaylistItem(currentIdx, 1);
+        
+        if (currentIdx === 0) btnUp.style.visibility = 'hidden';
+        if (currentIdx === currentPlaylistOrder.length - 1) btnDown.style.visibility = 'hidden';
+        
+        controls.appendChild(btnUp);
+        controls.appendChild(btnDown);
+        item.appendChild(titleSpan);
+        item.appendChild(controls);
+        container.appendChild(item);
+      });
+    }
+
+    function movePlaylistItem(index, direction) {
+      if (index + direction < 0 || index + direction >= currentPlaylistOrder.length) return;
+      const temp = currentPlaylistOrder[index];
+      currentPlaylistOrder[index] = currentPlaylistOrder[index + direction];
+      currentPlaylistOrder[index + direction] = temp;
+      renderAdminPlaylist();
+    }
+
+    document.getElementById('playlistSubmit').addEventListener('click', () => {
+      if (!fallbackMode) {
+        db.ref('settings/playlistOrder').set(currentPlaylistOrder);
+        document.getElementById('playlistSuccess').style.display = 'block';
+        setTimeout(() => {
+          document.getElementById('playlistSuccess').style.display = 'none';
+        }, 2000);
+      } else {
+        playlist = currentPlaylistOrder.map(idx => defaultPlaylist[idx]);
+        renderPlaylist();
+        document.getElementById('playlistSuccess').style.display = 'block';
+        setTimeout(() => {
+          document.getElementById('playlistSuccess').style.display = 'none';
+        }, 2000);
+      }
+    });
+
+    // Listen to background URL and playlist changes from Firebase (realtime for all users)
+    function setupFirebaseListeners() {
       if (!fallbackMode) {
         db.ref('settings/backgroundUrl').on('value', (snapshot) => {
           const url = snapshot.val();
           if (url) {
             applyBackground(url);
+          }
+        });
+
+        db.ref('settings/playlistOrder').on('value', (snapshot) => {
+          const order = snapshot.val();
+          if (order && Array.isArray(order) && order.length === defaultPlaylist.length) {
+            currentPlaylistOrder = order;
+            playlist = currentPlaylistOrder.map(idx => defaultPlaylist[idx]);
+            renderPlaylist();
+            const bgLinkModal = document.getElementById('bgLinkModal');
+            if (bgLinkModal.classList.contains('active')) {
+              renderAdminPlaylist();
+            }
           }
         });
       }
@@ -1879,7 +2025,7 @@
 
       // Initialize systems
       setupStats();
-      setupBackgroundListener();
+      setupFirebaseListeners();
       requestAnimationFrame(updateFPS);
 
       // Load first song
