@@ -1162,10 +1162,8 @@
 
   <!-- Ambient Background -->
   <div class="bg-animation">
-    <video id="bg-video" autoplay loop muted playsinline>
-      <source src="https://files.catbox.moe/f3t0ly.mp4" type="video/mp4">
-    </video>
-    <img id="bg-image" style="display: none;" alt="Background">
+    <video id="bg-video" src="https://files.catbox.moe/f3t0ly.mp4" autoplay loop muted playsinline crossorigin="anonymous"></video>
+    <img id="bg-image" style="display: none;" alt="Background" crossorigin="anonymous">
   </div>
   <div class="bg-overlay"></div>
 
@@ -1697,22 +1695,22 @@
     function applyBackground(url) {
       if (!url) return;
       const bgImage = document.getElementById('bg-image');
-      const isImage = url.match(/\.(jpeg|jpg|gif|png|webp)$/i);
+      const isVideo = url.match(/\.(mp4|webm|mov|ogg)$/i);
       
-      if (isImage) {
-        bgVideo.style.display = 'none';
-        bgVideo.pause();
-        bgImage.style.display = 'block';
-        if (bgImage.src !== url) {
-          bgImage.src = url;
-        }
-      } else {
+      if (isVideo) {
         bgImage.style.display = 'none';
         bgVideo.style.display = 'block';
         if (bgVideo.src !== url) {
           bgVideo.src = url;
           bgVideo.load();
           bgVideo.play().catch(() => {});
+        }
+      } else {
+        bgVideo.style.display = 'none';
+        bgVideo.pause();
+        bgImage.style.display = 'block';
+        if (bgImage.src !== url) {
+          bgImage.src = url;
         }
       }
     }
@@ -1976,6 +1974,7 @@
       }
       
       playerArt.onerror = () => { playerArt.src = 's4.jpg'; };
+      playerArt.crossOrigin = 'anonymous';
       playerArt.src = track.cover || 's4.jpg';
       
       // Extract artist if in track name or placeholder
@@ -2025,7 +2024,7 @@
         const item = document.createElement("div");
         item.className = "playlist-item";
         item.innerHTML = `
-          <img src="${track.cover}" class="playlist-art" onerror="this.src='s4.jpg'">
+          <img src="${track.cover || 's4.jpg'}" class="playlist-art" crossorigin="anonymous" onerror="this.src='s4.jpg'">
           <div class="playlist-meta">
             <span class="playlist-title">${track.name}</span>
             <span class="playlist-artist">Duong Lam</span>
