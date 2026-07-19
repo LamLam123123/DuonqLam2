@@ -1689,6 +1689,7 @@
     let isPlaying = false;
     let lyrics = [];
     let currentLyricIdx = -1;
+    let currentlyLoadedSrc = "";
 
     // Load a track
     function loadTrack(idx) {
@@ -1697,8 +1698,9 @@
       currentTrackIdx = idx;
 
       const track = playlist[currentTrackIdx];
-      if (audio.getAttribute('src') !== track.src) {
+      if (currentlyLoadedSrc !== track.src) {
         audio.src = track.src;
+        currentlyLoadedSrc = track.src;
       }
       playerArt.src = track.cover;
       // Extract artist if in track name or placeholder
