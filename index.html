@@ -719,7 +719,11 @@
       justify-content: center;
       z-index: 99999;
       cursor: pointer;
+      pointer-events: none; /* Block clicks until loaded */
       transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .click-trigger.ready {
+      pointer-events: auto;
     }
 
     .trigger-circle {
@@ -1069,7 +1073,7 @@
         <path d="M8 5v14l11-7z" />
       </svg>
     </div>
-    <div class="trigger-text">Click to enter space</div>
+    <div class="trigger-text" id="triggerText">Loading...</div>
   </div>
 
   <!-- Interactive Sparkles -->
@@ -1653,6 +1657,19 @@
       }
     });
 
+    let isFirebaseLoaded = false;
+    function markAppReady() {
+      if (!isFirebaseLoaded) {
+        isFirebaseLoaded = true;
+        const trigger = document.getElementById("click-trigger");
+        if (trigger) {
+          trigger.classList.add("ready");
+          const triggerText = document.getElementById("triggerText");
+          if (triggerText) triggerText.textContent = "Click to enter space";
+        }
+      }
+    }
+
     // Listen to background URL and playlist changes from Firebase (realtime for all users)
     function setupFirebaseListeners() {
       if (!fallbackMode) {
@@ -1681,7 +1698,10 @@
               renderAdminPlaylist();
             }
           }
+          markAppReady();
         });
+      } else {
+        markAppReady();
       }
     }
 
@@ -1701,6 +1721,7 @@
       if (currentlyLoadedSrc !== track.src) {
         audio.src = track.src;
         currentlyLoadedSrc = track.src;
+        audio.load(); // Force browser to fetch the new audio src immediately
       }
       playerArt.src = track.cover;
       // Extract artist if in track name or placeholder
@@ -2030,6 +2051,8 @@
     // ==========================================
     // Initialize Firebase listeners immediately so playlist and background are ready
     setupFirebaseListeners();
+    // Fallback in case Firebase is blocked or offline
+    setTimeout(markAppReady, 2000);
     
     // Pre-render list immediately
     renderPlaylist();
