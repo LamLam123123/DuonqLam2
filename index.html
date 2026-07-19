@@ -1669,6 +1669,13 @@
             currentPlaylistOrder = order;
             playlist = currentPlaylistOrder.map(idx => defaultPlaylist[idx]);
             renderPlaylist();
+            
+            // If user hasn't started playing yet, update the player preview metadata
+            const audio = document.getElementById('audio');
+            if (!isPlaying && audio.currentTime === 0) {
+              loadTrack(0);
+            }
+
             const bgLinkModal = document.getElementById('bgLinkModal');
             if (bgLinkModal.classList.contains('active')) {
               renderAdminPlaylist();
