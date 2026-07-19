@@ -964,9 +964,51 @@
     }
 
     .admin-playlist-btn:hover {
-      background: rgba(255, 94, 151, 0.3);
+      background: rgba(255, 255, 255, 0.2);
     }
 
+    .admin-playlist-btn.delete {
+      color: #ff4d4d;
+      background: rgba(255, 77, 77, 0.1);
+    }
+
+    .admin-playlist-btn.delete:hover {
+      background: rgba(255, 77, 77, 0.2);
+    }
+
+    .admin-add-track-container {
+      background: rgba(0,0,0,0.2);
+      border: 1px dashed rgba(255,255,255,0.2);
+      border-radius: 8px;
+      padding: 10px;
+      margin-top: 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .admin-add-track-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--primary-glow);
+    }
+
+    .admin-add-track-btn {
+      background: var(--primary-glow);
+      color: #fff;
+      border: none;
+      padding: 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      margin-top: 5px;
+      transition: background 0.3s;
+    }
+    .admin-add-track-btn:hover {
+      background: var(--secondary-glow);
+    }
+
+    /* Scrollbar for Modals */
     .admin-close {
       position: absolute;
       top: 12px;
@@ -1193,7 +1235,7 @@
       <div id="adminPlaylistContainer" class="admin-playlist-container">
         <!-- Rendered dynamically -->
       </div>
-      <button class="admin-btn" id="playlistSubmit" style="margin-top: 15px;">Save Playlist Order</button>
+      <button class="admin-btn" id="playlistSubmit" style="margin-top: 15px;">Save Playlist</button>
       <div class="admin-success" id="playlistSuccess">✅ Playlist updated!</div>
     </div>
   </div>
@@ -1316,7 +1358,6 @@
       { src: "uma.mp3", cover: "uma.jpg", name: "Low Cortisol", lrc: "uma.lrc" }
     ];
     let playlist = [...defaultPlaylist];
-    let currentPlaylistOrder = Array.from({length: defaultPlaylist.length}, (_, i) => i);
 
     // ==========================================
     // FIREBASE SETUP & STUFF
@@ -1620,8 +1661,8 @@
     function renderAdminPlaylist() {
       const container = document.getElementById('adminPlaylistContainer');
       container.innerHTML = '';
-      currentPlaylistOrder.forEach((originalIdx, currentIdx) => {
-        const track = defaultPlaylist[originalIdx];
+      
+      playlist.forEach((track, currentIdx) => {
         const item = document.createElement('div');
         item.className = 'admin-playlist-item';
         
@@ -1643,12 +1684,18 @@
         btnDown.className = 'admin-playlist-btn';
         btnDown.innerHTML = '▼';
         btnDown.onclick = () => movePlaylistItem(currentIdx, 1);
+
+        const btnDelete = document.createElement('button');
+        btnDelete.className = 'admin-playlist-btn delete';
+        btnDelete.innerHTML = '❌';
+        btnDelete.onclick = () => deletePlaylistItem(currentIdx);
         
         if (currentIdx === 0) btnUp.style.visibility = 'hidden';
-        if (currentIdx === currentPlaylistOrder.length - 1) btnDown.style.visibility = 'hidden';
+        if (currentIdx === playlist.length - 1) btnDown.style.visibility = 'hidden';
         
         controls.appendChild(btnUp);
         controls.appendChild(btnDown);
+        controls.appendChild(btnDelete);
         header.appendChild(titleSpan);
         header.appendChild(controls);
         
@@ -1656,13 +1703,13 @@
         bgInput.type = 'text';
         bgInput.className = 'admin-track-bg-input';
         bgInput.placeholder = 'Custom Background URL (catbox.moe) - optional';
-        bgInput.value = trackBackgrounds[originalIdx] || '';
+        bgInput.value = track.bgUrl || '';
         bgInput.onchange = (e) => {
           const val = e.target.value.trim();
           if (val) {
-             trackBackgrounds[originalIdx] = val;
+             track.bgUrl = val;
           } else {
-             delete trackBackgrounds[originalIdx];
+             delete track.bgUrl;
           }
         };
 
@@ -1670,26 +1717,85 @@
         item.appendChild(bgInput);
         container.appendChild(item);
       });
+
+      // Add New Track Form
+      const addContainer = document.createElement('div');
+      addContainer.className = 'admin-add-track-container';
+      
+      const addTitle = document.createElement('div');
+      addTitle.className = 'admin-add-track-title';
+      addTitle.textContent = '+ Add New Track';
+
+      const inputName = document.createElement('input');
+      inputName.className = 'admin-track-bg-input';
+      inputName.placeholder = 'Song Name - Artist';
+
+      const inputSrc = document.createElement('input');
+      inputSrc.className = 'admin-track-bg-input';
+      inputSrc.placeholder = 'Audio URL (catbox.moe .mp3)';
+
+      const inputCover = document.createElement('input');
+      inputCover.className = 'admin-track-bg-input';
+      inputCover.placeholder = 'Cover Image URL (optional)';
+
+      const inputBg = document.createElement('input');
+      inputBg.className = 'admin-track-bg-input';
+      inputBg.placeholder = 'Background Video/Image URL (optional)';
+
+      const btnAdd = document.createElement('button');
+      btnAdd.className = 'admin-add-track-btn';
+      btnAdd.textContent = 'Add Track';
+      btnAdd.onclick = () => {
+        if (!inputName.value.trim() || !inputSrc.value.trim()) {
+           alert("Please provide at least Name and Audio URL.");
+           return;
+        }
+        playlist.push({
+           name: inputName.value.trim(),
+           src: inputSrc.value.trim(),
+           cover: inputCover.value.trim() || "av2.jpg", // default cover
+           lrc: "", // lyrics not supported in add yet
+           bgUrl: inputBg.value.trim() || undefined
+        });
+        renderAdminPlaylist();
+      };
+
+      addContainer.appendChild(addTitle);
+      addContainer.appendChild(inputName);
+      addContainer.appendChild(inputSrc);
+      addContainer.appendChild(inputCover);
+      addContainer.appendChild(inputBg);
+      addContainer.appendChild(btnAdd);
+      
+      container.appendChild(addContainer);
     }
 
     function movePlaylistItem(index, direction) {
-      if (index + direction < 0 || index + direction >= currentPlaylistOrder.length) return;
-      const temp = currentPlaylistOrder[index];
-      currentPlaylistOrder[index] = currentPlaylistOrder[index + direction];
-      currentPlaylistOrder[index + direction] = temp;
+      if (index + direction < 0 || index + direction >= playlist.length) return;
+      const temp = playlist[index];
+      playlist[index] = playlist[index + direction];
+      playlist[index + direction] = temp;
       renderAdminPlaylist();
+    }
+
+    function deletePlaylistItem(index) {
+      if (confirm("Remove this track from the playlist?")) {
+        playlist.splice(index, 1);
+        renderAdminPlaylist();
+      }
     }
 
     document.getElementById('playlistSubmit').addEventListener('click', () => {
       if (!fallbackMode) {
-        db.ref('settings/playlistOrder').set(currentPlaylistOrder);
-        db.ref('settings/trackBackgrounds').set(trackBackgrounds);
+        db.ref('settings/customPlaylist').set(playlist);
+        // Clear out old data to keep db clean
+        db.ref('settings/playlistOrder').remove();
+        db.ref('settings/trackBackgrounds').remove();
         document.getElementById('playlistSuccess').style.display = 'block';
         setTimeout(() => {
           document.getElementById('playlistSuccess').style.display = 'none';
         }, 2000);
       } else {
-        playlist = currentPlaylistOrder.map(idx => defaultPlaylist[idx]);
         renderPlaylist();
         document.getElementById('playlistSuccess').style.display = 'block';
         setTimeout(() => {
@@ -1699,7 +1805,6 @@
     });
 
     let isFirebaseLoaded = false;
-    let trackBackgrounds = {};
     let globalBackgroundUrl = "";
 
     function markAppReady() {
@@ -1717,49 +1822,51 @@
     // Listen to background URL and playlist changes from Firebase (realtime for all users)
     function setupFirebaseListeners() {
       if (!fallbackMode) {
-        db.ref('settings/backgroundUrl').on('value', (snapshot) => {
-          const url = snapshot.val();
-          if (url) {
-            globalBackgroundUrl = url;
-            // If current track doesn't have a specific bg, apply this
-            const originalIdx = currentPlaylistOrder[currentTrackIdx];
-            if (!trackBackgrounds[originalIdx]) {
-              applyBackground(url);
+        // We listen to the whole 'settings' node to handle migrations and keep it simple
+        db.ref('settings').on('value', (snapshot) => {
+          const settings = snapshot.val() || {};
+          
+          if (settings.backgroundUrl) {
+            globalBackgroundUrl = settings.backgroundUrl;
+          }
+
+          if (settings.customPlaylist && Array.isArray(settings.customPlaylist)) {
+            playlist = settings.customPlaylist;
+          } else {
+            // Backward compatibility migration from old structures
+            const order = settings.playlistOrder;
+            const bgs = settings.trackBackgrounds || {};
+            if (order && Array.isArray(order) && order.length === defaultPlaylist.length) {
+              playlist = order.map((originalIdx) => {
+                let track = { ...defaultPlaylist[originalIdx] };
+                if (bgs[originalIdx]) track.bgUrl = bgs[originalIdx];
+                return track;
+              });
+            } else {
+              playlist = [...defaultPlaylist];
             }
           }
-        });
 
-        db.ref('settings/trackBackgrounds').on('value', (snapshot) => {
-          trackBackgrounds = snapshot.val() || {};
-          // Immediately apply if playing
-          if (isPlaying || currentTrackIdx !== undefined) {
-             const originalIdx = currentPlaylistOrder[currentTrackIdx];
-             if (trackBackgrounds[originalIdx]) {
-               applyBackground(trackBackgrounds[originalIdx]);
-             } else if (globalBackgroundUrl) {
-               applyBackground(globalBackgroundUrl);
-             }
+          // Apply current track's background or fallback to global
+          const track = playlist[currentTrackIdx];
+          if (track && track.bgUrl) {
+            applyBackground(track.bgUrl);
+          } else if (globalBackgroundUrl) {
+            applyBackground(globalBackgroundUrl);
           }
-        });
 
-        db.ref('settings/playlistOrder').on('value', (snapshot) => {
-          const order = snapshot.val();
-          if (order && Array.isArray(order) && order.length === defaultPlaylist.length) {
-            currentPlaylistOrder = order;
-            playlist = currentPlaylistOrder.map(idx => defaultPlaylist[idx]);
-            renderPlaylist();
-            
-            // If user hasn't started playing yet, update the player preview metadata
-            const audio = document.getElementById('audio');
-            if (!isPlaying && audio.currentTime === 0) {
-              loadTrack(0);
-            }
-
-            const bgLinkModal = document.getElementById('bgLinkModal');
-            if (bgLinkModal.classList.contains('active')) {
-              renderAdminPlaylist();
-            }
+          renderPlaylist();
+          
+          const audio = document.getElementById('audio');
+          if (!isPlaying && audio.currentTime === 0) {
+            loadTrack(0);
           }
+
+          const bgLinkModal = document.getElementById('bgLinkModal');
+          if (bgLinkModal.classList.contains('active')) {
+            renderAdminPlaylist();
+          }
+
           markAppReady();
         });
       } else {
@@ -1797,13 +1904,10 @@
       }
 
       // Apply custom background for track if available
-      if (currentPlaylistOrder && currentPlaylistOrder.length > 0) {
-        const originalIdx = currentPlaylistOrder[currentTrackIdx];
-        if (trackBackgrounds && trackBackgrounds[originalIdx]) {
-          applyBackground(trackBackgrounds[originalIdx]);
-        } else if (globalBackgroundUrl) {
-          applyBackground(globalBackgroundUrl);
-        }
+      if (track.bgUrl) {
+        applyBackground(track.bgUrl);
+      } else if (globalBackgroundUrl) {
+        applyBackground(globalBackgroundUrl);
       }
 
       // Use cached lyrics instantly
