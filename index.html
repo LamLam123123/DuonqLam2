@@ -1835,6 +1835,7 @@
           } else {
              track.cover = 'av2.jpg';
           }
+          document.getElementById('playlistSubmit').click();
         };
 
         const bgInput = document.createElement('input');
@@ -1850,6 +1851,7 @@
           } else {
              delete track.bgUrl;
           }
+          document.getElementById('playlistSubmit').click();
         };
 
         const typeRow = document.createElement('div');
@@ -1877,6 +1879,10 @@
         typeSelect.onchange = (e) => {
           track.type = e.target.value;
           bgInput.style.display = track.type === 'mp4' ? 'none' : 'block';
+          if (track.type === 'mp4') {
+             delete track.bgUrl;
+          }
+          document.getElementById('playlistSubmit').click();
         };
         typeRow.appendChild(typeLabel);
         typeRow.appendChild(typeSelect);
@@ -1898,6 +1904,7 @@
         });
         ratioSelect.onchange = (e) => {
           track.bgRatio = e.target.value;
+          document.getElementById('playlistSubmit').click();
         };
         ratioRow.appendChild(ratioLabel);
         ratioRow.appendChild(ratioSelect);
@@ -1924,15 +1931,20 @@
          return;
       }
       
-      playlist.push({
+      const newTrack = {
          name: inputName.value.trim(),
          src: inputSrc.value.trim(),
          type: inputType.value,
          cover: inputCover.value.trim() || "s4.jpg",
          lrc: "",
-         bgUrl: inputType.value === 'mp3' ? (inputBg.value.trim() || undefined) : undefined,
          bgRatio: inputRatio ? inputRatio.value : 'cover'
-      });
+      };
+      
+      if (inputType.value === 'mp3' && inputBg.value.trim()) {
+         newTrack.bgUrl = inputBg.value.trim();
+      }
+      
+      playlist.push(newTrack);
       
       
       // Clear inputs
