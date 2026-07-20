@@ -71,6 +71,13 @@
       filter: brightness(0.85) saturate(1.3);
     }
 
+    #bg-video.ratio-16-9 { object-fit: contain; aspect-ratio: 16/9; top: 50%; transform: translateY(-50%); height: auto; }
+    #bg-video.ratio-4-3 { object-fit: contain; aspect-ratio: 4/3; top: 50%; transform: translateY(-50%); height: auto; }
+    #bg-video.ratio-1-1 { object-fit: contain; aspect-ratio: 1/1; top: 50%; transform: translateY(-50%); height: auto; }
+    #bg-image.ratio-16-9 { object-fit: contain; aspect-ratio: 16/9; top: 50%; transform: translateY(-50%); height: auto; }
+    #bg-image.ratio-4-3 { object-fit: contain; aspect-ratio: 4/3; top: 50%; transform: translateY(-50%); height: auto; }
+    #bg-image.ratio-1-1 { object-fit: contain; aspect-ratio: 1/1; top: 50%; transform: translateY(-50%); height: auto; }
+
     /* Color mesh gradient fallback/enhancement overlay */
     .bg-overlay {
       position: fixed;
@@ -1287,6 +1294,15 @@
             <input type="text" id="newTrackSrc" class="admin-track-bg-input" placeholder="Audio URL (catbox.moe .mp3)" autocomplete="off">
             <input type="text" id="newTrackCover" class="admin-track-bg-input" placeholder="Cover Image URL (catbox.moe)" autocomplete="off">
             <input type="text" id="newTrackBg" class="admin-track-bg-input" placeholder="Background Video/Image URL (catbox.moe)" autocomplete="off">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:11px;color:rgba(255,255,255,0.5);">Ratio:</span>
+              <select id="newTrackRatio" class="admin-track-bg-input" style="flex:1;padding:4px 8px;font-size:12px;margin:0;">
+                <option value="cover">Fill (Cover)</option>
+                <option value="16:9">16:9</option>
+                <option value="4:3">4:3</option>
+                <option value="1:1">1:1</option>
+              </select>
+            </div>
             <button class="admin-add-track-btn" id="btnAddNewTrack">Add Track</button>
           </div>
         </div>
@@ -1692,10 +1708,19 @@
       if (e.key === 'Enter') document.getElementById('bgLinkSubmit').click();
     });
 
-    function applyBackground(url) {
+    function applyBackground(url, ratio) {
       if (!url) return;
       const bgImage = document.getElementById('bg-image');
       const isVideo = url.match(/\.(mp4|webm|mov|ogg)$/i);
+      
+      // Reset ratio classes on both elements
+      bgVideo.className = '';
+      bgImage.className = '';
+      if (ratio && ratio !== 'cover') {
+        const ratioClass = 'ratio-' + ratio.replace(':', '-');
+        bgVideo.classList.add(ratioClass);
+        bgImage.classList.add(ratioClass);
+      }
       
       if (isVideo) {
         bgImage.style.display = 'none';
@@ -1817,9 +1842,31 @@
           }
         };
 
+        const ratioRow = document.createElement('div');
+        ratioRow.style.cssText = 'display:flex;align-items:center;gap:8px;margin-top:4px;';
+        const ratioLabel = document.createElement('span');
+        ratioLabel.textContent = 'Ratio:';
+        ratioLabel.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.5);';
+        const ratioSelect = document.createElement('select');
+        ratioSelect.className = 'admin-track-bg-input';
+        ratioSelect.style.cssText = 'flex:1;padding:4px 8px;font-size:12px;margin:0;';
+        ['cover', '16:9', '4:3', '1:1'].forEach(opt => {
+          const option = document.createElement('option');
+          option.value = opt;
+          option.textContent = opt === 'cover' ? 'Fill (Cover)' : opt;
+          if ((track.bgRatio || 'cover') === opt) option.selected = true;
+          ratioSelect.appendChild(option);
+        });
+        ratioSelect.onchange = (e) => {
+          track.bgRatio = e.target.value;
+        };
+        ratioRow.appendChild(ratioLabel);
+        ratioRow.appendChild(ratioSelect);
+
         item.appendChild(header);
         item.appendChild(coverInput);
         item.appendChild(bgInput);
+        item.appendChild(ratioRow);
         container.appendChild(item);
       });
     }
@@ -1959,6 +2006,7 @@
     let lyrics = [];
     let currentLyricIdx = -1;
     let currentlyLoadedSrc = "";
+    let isBgSyncedWithAudio = false;
 
     // Load a track
     function loadTrack(idx) {
@@ -1987,13 +2035,24 @@
       }
 
       // Apply custom background for track if available
-      if (track.bgUrl) {
-        applyBackground(track.bgUrl);
+      let bgToApply = track.bgUrl;
+      isBgSyncedWithAudio = false;
+      if (!bgToApply && track.src.match(/\.(mp4|webm|mov|ogg)$/i)) {
+         bgToApply = track.src;
+         isBgSyncedWithAudio = true;
+      }
+
+      if (bgToApply) {
+        applyBackground(bgToApply, track.bgRatio);
       } else if (globalBackgroundUrl) {
-        applyBackground(globalBackgroundUrl);
+        applyBackground(globalBackgroundUrl, track.bgRatio);
       } else {
         // Fallback: show default video
-        applyBackground('https://files.catbox.moe/f3t0ly.mp4');
+        applyBackground('https://files.catbox.moe/f3t0ly.mp4', track.bgRatio);
+      }
+      
+      if (isBgSyncedWithAudio) {
+         bgVideo.currentTime = audio.currentTime;
       }
 
       // Use cached lyrics instantly
@@ -2052,6 +2111,10 @@
     function playTrack() {
       isPlaying = true;
       audio.play().then(() => {
+        if (isBgSyncedWithAudio) {
+          bgVideo.currentTime = audio.currentTime;
+          bgVideo.play().catch(()=>{});
+        }
         btnPlay.classList.add("playing");
         // Pause icon path
         playIcon.innerHTML = `<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>`;
@@ -2067,6 +2130,7 @@
 
     function pauseTrack() {
       audio.pause();
+      if (isBgSyncedWithAudio) bgVideo.pause();
       isPlaying = false;
       btnPlay.classList.remove("playing");
       // Play icon path
@@ -2090,6 +2154,19 @@
     audio.addEventListener("ended", () => {
       loadTrack(currentTrackIdx + 1);
       playTrack();
+    });
+    
+    audio.addEventListener("seeked", () => {
+      if (isBgSyncedWithAudio) bgVideo.currentTime = audio.currentTime;
+    });
+    audio.addEventListener("waiting", () => {
+      if (isBgSyncedWithAudio) bgVideo.pause();
+    });
+    audio.addEventListener("playing", () => {
+      if (isBgSyncedWithAudio) {
+        bgVideo.currentTime = audio.currentTime;
+        bgVideo.play().catch(()=>{});
+      }
     });
 
     // Time update for progress bar and lyrics sync
