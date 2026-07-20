@@ -1934,6 +1934,7 @@
          bgRatio: inputRatio ? inputRatio.value : 'cover'
       });
       
+      
       // Clear inputs
       inputName.value = '';
       inputSrc.value = '';
@@ -1941,6 +1942,9 @@
       inputBg.value = '';
       
       renderAdminPlaylist();
+      
+      // Auto-save the playlist to Firebase so it updates instantly
+      document.getElementById('playlistSubmit').click();
       
       // Scroll to bottom
       setTimeout(() => {
@@ -1964,6 +1968,8 @@
       if (confirm("Remove this track from the playlist?")) {
         playlist.splice(index, 1);
         renderAdminPlaylist();
+        // Auto-save the playlist
+        document.getElementById('playlistSubmit').click();
       }
     }
 
