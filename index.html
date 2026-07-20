@@ -1292,6 +1292,13 @@
             <div class="admin-add-track-title">+ Add New Track</div>
             <input type="text" id="newTrackName" class="admin-track-bg-input" placeholder="Song Name - Artist" autocomplete="off">
             <input type="text" id="newTrackSrc" class="admin-track-bg-input" placeholder="Audio URL (catbox.moe .mp3)" autocomplete="off">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+              <span style="font-size:11px;color:rgba(255,255,255,0.5);">Type:</span>
+              <select id="newTrackType" class="admin-track-bg-input" style="flex:1;padding:4px 8px;font-size:12px;margin:0;">
+                <option value="mp3">Audio (MP3)</option>
+                <option value="mp4">Video as Music (MP4)</option>
+              </select>
+            </div>
             <input type="text" id="newTrackCover" class="admin-track-bg-input" placeholder="Cover Image URL (catbox.moe)" autocomplete="off">
             <input type="text" id="newTrackBg" class="admin-track-bg-input" placeholder="Background Video/Image URL (catbox.moe)" autocomplete="off">
             <div style="display:flex;align-items:center;gap:8px;">
@@ -1835,6 +1842,7 @@
         bgInput.className = 'admin-track-bg-input';
         bgInput.placeholder = 'Custom Background URL (catbox.moe) - optional';
         bgInput.value = track.bgUrl || '';
+        bgInput.style.display = track.type === 'mp4' ? 'none' : 'block';
         bgInput.onchange = (e) => {
           const val = e.target.value.trim();
           if (val) {
@@ -1843,6 +1851,35 @@
              delete track.bgUrl;
           }
         };
+
+        const typeRow = document.createElement('div');
+        typeRow.style.cssText = 'display:flex;align-items:center;gap:8px;margin-top:4px;margin-bottom:6px;';
+        const typeLabel = document.createElement('span');
+        typeLabel.textContent = 'Type:';
+        typeLabel.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.5);';
+        const typeSelect = document.createElement('select');
+        typeSelect.className = 'admin-track-bg-input';
+        typeSelect.style.cssText = 'flex:1;padding:4px 8px;font-size:12px;margin:0;';
+        
+        const optMp3 = document.createElement('option');
+        optMp3.value = 'mp3';
+        optMp3.textContent = 'Audio (MP3)';
+        const optMp4 = document.createElement('option');
+        optMp4.value = 'mp4';
+        optMp4.textContent = 'Video as Music (MP4)';
+        
+        if (track.type === 'mp4') optMp4.selected = true;
+        else optMp3.selected = true;
+        
+        typeSelect.appendChild(optMp3);
+        typeSelect.appendChild(optMp4);
+        
+        typeSelect.onchange = (e) => {
+          track.type = e.target.value;
+          bgInput.style.display = track.type === 'mp4' ? 'none' : 'block';
+        };
+        typeRow.appendChild(typeLabel);
+        typeRow.appendChild(typeSelect);
 
         const ratioRow = document.createElement('div');
         ratioRow.style.cssText = 'display:flex;align-items:center;gap:8px;margin-top:4px;';
@@ -1866,6 +1903,7 @@
         ratioRow.appendChild(ratioSelect);
 
         item.appendChild(header);
+        item.appendChild(typeRow);
         item.appendChild(coverInput);
         item.appendChild(bgInput);
         item.appendChild(ratioRow);
@@ -1876,8 +1914,10 @@
     document.getElementById('btnAddNewTrack').addEventListener('click', () => {
       const inputName = document.getElementById('newTrackName');
       const inputSrc = document.getElementById('newTrackSrc');
+      const inputType = document.getElementById('newTrackType');
       const inputCover = document.getElementById('newTrackCover');
       const inputBg = document.getElementById('newTrackBg');
+      const inputRatio = document.getElementById('newTrackRatio');
 
       if (!inputName.value.trim() || !inputSrc.value.trim()) {
          alert("Please provide at least Name and Audio URL.");
@@ -1887,9 +1927,11 @@
       playlist.push({
          name: inputName.value.trim(),
          src: inputSrc.value.trim(),
+         type: inputType.value,
          cover: inputCover.value.trim() || "s4.jpg",
          lrc: "",
-         bgUrl: inputBg.value.trim() || undefined
+         bgUrl: inputType.value === 'mp3' ? (inputBg.value.trim() || undefined) : undefined,
+         bgRatio: inputRatio ? inputRatio.value : 'cover'
       });
       
       // Clear inputs
@@ -1905,6 +1947,17 @@
         const container = document.getElementById('adminPlaylistContainer');
         container.scrollTop = container.scrollHeight;
       }, 50);
+    });
+
+    document.getElementById('newTrackType').addEventListener('change', (e) => {
+      const bgInput = document.getElementById('newTrackBg');
+      if (e.target.value === 'mp4') {
+        bgInput.style.display = 'none';
+        document.getElementById('newTrackSrc').placeholder = 'Video URL (catbox.moe .mp4)';
+      } else {
+        bgInput.style.display = 'block';
+        document.getElementById('newTrackSrc').placeholder = 'Audio URL (catbox.moe .mp3)';
+      }
     });
 
     function deletePlaylistItem(index) {
@@ -2038,7 +2091,7 @@
 
       // Apply custom background for track if available
       let bgToApply = track.bgUrl;
-      const isTrackVideo = !!track.src.match(/\.(mp4|webm|mov|ogg)$/i);
+      const isTrackVideo = track.type === 'mp4' || (!track.type && !!track.src.match(/\.(mp4|webm|mov|ogg)$/i));
       
       if (!bgToApply && isTrackVideo) {
          bgToApply = track.src;
