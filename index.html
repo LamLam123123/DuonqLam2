@@ -1728,7 +1728,9 @@
         if (bgVideo.src !== url) {
           bgVideo.src = url;
           bgVideo.load();
-          bgVideo.play().catch(() => {});
+          if (activePlayer !== bgVideo || isPlaying) {
+            bgVideo.play().catch(() => {});
+          }
         }
       } else {
         bgVideo.style.display = 'none';
@@ -2006,7 +2008,7 @@
     let lyrics = [];
     let currentLyricIdx = -1;
     let currentlyLoadedSrc = "";
-    let isBgSyncedWithAudio = false;
+    let activePlayer = audio;
 
     // Load a track
     function loadTrack(idx) {
@@ -2036,10 +2038,25 @@
 
       // Apply custom background for track if available
       let bgToApply = track.bgUrl;
-      isBgSyncedWithAudio = false;
-      if (!bgToApply && track.src.match(/\.(mp4|webm|mov|ogg)$/i)) {
+      const isTrackVideo = !!track.src.match(/\.(mp4|webm|mov|ogg)$/i);
+      
+      if (!bgToApply && isTrackVideo) {
          bgToApply = track.src;
-         isBgSyncedWithAudio = true;
+      }
+      
+      // Configure active player
+      if (isTrackVideo && bgToApply === track.src) {
+         // Video is the track itself
+         activePlayer = bgVideo;
+         bgVideo.muted = false; // unmute so we can hear it
+         audio.pause();
+         audio.src = '';
+      } else {
+         // Audio is the track
+         activePlayer = audio;
+         bgVideo.muted = true; // bg video stays muted
+         audio.src = track.src;
+         audio.load();
       }
 
       if (bgToApply) {
@@ -2049,10 +2066,6 @@
       } else {
         // Fallback: show default video
         applyBackground('https://files.catbox.moe/f3t0ly.mp4', track.bgRatio);
-      }
-      
-      if (isBgSyncedWithAudio) {
-         bgVideo.currentTime = audio.currentTime;
       }
 
       // Use cached lyrics instantly
@@ -2110,11 +2123,7 @@
 
     function playTrack() {
       isPlaying = true;
-      audio.play().then(() => {
-        if (isBgSyncedWithAudio) {
-          bgVideo.currentTime = audio.currentTime;
-          bgVideo.play().catch(()=>{});
-        }
+      activePlayer.play().then(() => {
         btnPlay.classList.add("playing");
         // Pause icon path
         playIcon.innerHTML = `<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>`;
@@ -2129,8 +2138,7 @@
     }
 
     function pauseTrack() {
-      audio.pause();
-      if (isBgSyncedWithAudio) bgVideo.pause();
+      activePlayer.pause();
       isPlaying = false;
       btnPlay.classList.remove("playing");
       // Play icon path
@@ -2151,41 +2159,32 @@
       loadTrack(currentTrackIdx + 1);
       playTrack();
     });
-    audio.addEventListener("ended", () => {
-      loadTrack(currentTrackIdx + 1);
-      playTrack();
-    });
-    
-    audio.addEventListener("seeked", () => {
-      if (isBgSyncedWithAudio) bgVideo.currentTime = audio.currentTime;
-    });
-    audio.addEventListener("waiting", () => {
-      if (isBgSyncedWithAudio) bgVideo.pause();
-    });
-    audio.addEventListener("playing", () => {
-      if (isBgSyncedWithAudio) {
-        bgVideo.currentTime = audio.currentTime;
-        bgVideo.play().catch(()=>{});
-      }
-    });
 
-    // Time update for progress bar and lyrics sync
-    audio.addEventListener("timeupdate", () => {
-      if (audio.duration) {
-        const percent = (audio.currentTime / audio.duration) * 100;
-        progressBarMini.style.width = `${percent}%`;
-        progressBarFull.style.width = `${percent}%`;
-        syncLyrics();
-      }
+    [audio, bgVideo].forEach(player => {
+      player.addEventListener("ended", (e) => {
+        if (e.target !== activePlayer) return;
+        loadTrack(currentTrackIdx + 1);
+        playTrack();
+      });
+
+      player.addEventListener("timeupdate", (e) => {
+        if (e.target !== activePlayer) return;
+        if (activePlayer.duration) {
+          const percent = (activePlayer.currentTime / activePlayer.duration) * 100;
+          progressBarMini.style.width = `${percent}%`;
+          progressBarFull.style.width = `${percent}%`;
+          syncLyrics();
+        }
+      });
     });
 
     // Seek track handlers
     const handleSeek = (e, container) => {
       const width = container.clientWidth;
       const clickX = e.offsetX;
-      const duration = audio.duration;
+      const duration = activePlayer.duration;
       if (duration) {
-        audio.currentTime = (clickX / width) * duration;
+        activePlayer.currentTime = (clickX / width) * duration;
       }
     };
 
@@ -2295,7 +2294,7 @@
 
     function syncLyrics() {
       if (lyrics.length === 0) return;
-      const curTime = audio.currentTime;
+      const curTime = activePlayer.currentTime;
       let activeIdx = -1;
 
       for (let i = 0; i < lyrics.length; i++) {
